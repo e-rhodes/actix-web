@@ -14,7 +14,7 @@ use mime::Mime;
 use tempfile_dep::NamedTempFile;
 use tokio::io::AsyncWriteExt;
 
-use super::FieldErrorHandler;
+use super::{FieldErrorHandler, config_from_req};
 use crate::{
     form::{FieldReader, Limits},
     Field, MultipartError,
@@ -126,9 +126,7 @@ impl TempFileConfig {
     /// Extracts payload config from app data. Check both `T` and `Data<T>`, in that order, and fall
     /// back to the default payload config.
     fn from_req(req: &HttpRequest) -> &Self {
-        req.app_data::<Self>()
-            .or_else(|| req.app_data::<web::Data<Self>>().map(|d| d.as_ref()))
-            .unwrap_or(&DEFAULT_CONFIG)
+        config_from_req(req, &DEFAULT_CONFIG)
     }
 
     fn map_error(

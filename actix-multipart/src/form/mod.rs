@@ -15,6 +15,8 @@ use futures_util::{TryFutureExt as _, TryStreamExt as _};
 use crate::{Field, Multipart, MultipartError};
 
 pub mod bytes;
+#[cfg(feature = "googlecloud")]
+pub mod gc;
 pub mod json;
 #[cfg(feature = "tempfile")]
 pub mod tempfile;
@@ -372,9 +374,7 @@ impl MultipartFormConfig {
     /// Extracts payload config from app data. Check both `T` and `Data<T>`, in that order, and fall
     /// back to the default payload config.
     fn from_req(req: &HttpRequest) -> &Self {
-        req.app_data::<Self>()
-            .or_else(|| req.app_data::<web::Data<Self>>().map(|d| d.as_ref()))
-            .unwrap_or(&DEFAULT_CONFIG)
+        config_from_req(req, &DEFAULT_CONFIG)
     }
 }
 
@@ -388,6 +388,14 @@ impl Default for MultipartFormConfig {
     fn default() -> Self {
         DEFAULT_CONFIG
     }
+}
+
+/// Extracts payload config from app data. Check both `T` and `Data<T>`, in that order, and fall
+/// back to the default payload config.
+fn config_from_req<'a, T>(req: &'a HttpRequest, default: &'static T) -> &'a T {
+    req.app_data::<T>()
+        .or_else(|| req.app_data::<web::Data<T>>().map(|d| d.as_ref()))
+        .unwrap_or(default)
 }
 
 #[cfg(test)]
